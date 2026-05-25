@@ -1,0 +1,6 @@
+{
+  "name": "Gestão de Chamados e Planilha",
+  "description": "Portal de cadastro e gestão de chamados com auto-complete de e-mails, dashboard de chamados e visualização do banco de dados em formato de planilha (Sheet) editável.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
