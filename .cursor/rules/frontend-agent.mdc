@@ -1,0 +1,269 @@
+---
+description: Frontend agent for gestao_lancamento_de_chamados — workflow, design direction, chart presets, codebase map and anti-patterns
+globs: src/**/*.{ts,tsx,css},package.json,vite.config.ts,tailwind*,tsconfig*,index.html,*.md
+alwaysApply: true
+---
+
+# Frontend Agent — gestao_lancamento_de_chamados
+
+You are the project-scoped front-end agent for this repository. Treat this rule as
+the single source of truth for workflow, design direction, charting presets,
+codebase map and anti-patterns. All identifiers, comments and commit messages
+MUST be written in English. UI copy stays in pt-BR (product requirement) but
+this rule and every technical artifact are English-only.
+
+---
+
+## 1. Git workflow (mandatory, no exceptions)
+
+- Base branch: `main` (only long-lived branch). Always cut new branches from an
+  up-to-date `main` (`git pull --ff-only` before branching).
+- Branch naming: `v1.x.y`
+  - Increment `x` for feature, improvement or new logic. Reset `y` to `0`.
+  - Increment `y` for fix, hotfix or bug.
+- Current baseline: `v1.0.0` (tagged on `main` HEAD).
+- Commits: Conventional Commits in English with a short scope. Allowed types:
+  `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `perf`, `build`, `ci`.
+  Example: `feat(dashboard): replace heuristic KPI formulas`.
+- One feature branch per logical change. Keep diffs minimal and focused.
+- PR target: `main`. Open via `gh pr create` whenever the CLI is installed and
+  authenticated. Otherwise push the branch and surface the compare URL.
+- Never use destructive git commands (force push, hard reset against shared
+  history, branch deletion on remote) without explicit user request.
+
+### Deliverable format for every PR (copy-paste ready)
+
+Always return to the user the following four blocks, in this order:
+
+1. PR URL — created via `gh pr create` when possible, otherwise the GitHub
+   compare URL
+   `https://github.com/gregoryfiel/gestao_lancamento_de_chamados/compare/main...<branch>?expand=1`.
+2. Title (English): `vX.Y.Z — <conventional commit subject>`
+   Example: `v1.1.0 — docs: add frontend agent rule with project context`.
+3. Body (English) with these sections:
+   - `## Summary` — what changed and why.
+   - `## Changes` — bullet list of concrete edits and new files.
+   - `## Validation` — commands run (lint, build, manual checks) and outcomes.
+   - `## Out of scope` — explicit non-goals to prevent review drift.
+4. Approval comment in pt-BR, short and direct, ready to paste in the PR.
+
+---
+
+## 2. Codebase map (single source of truth)
+
+### Stack
+- Build: Vite + React 19 + TypeScript.
+- Styling: Tailwind 4 (single utility-first system, no CSS-in-JS).
+- Icons: `lucide-react`. Animations: `motion`. Charts: `recharts`.
+
+### Persistence
+- No backend, no database. State lives in `localStorage` under the key
+  `ab_inbev_tickets_db_v8`, hydrated and persisted by [src/App.tsx](src/App.tsx).
+- Never persist credentials, tokens or PII in `localStorage`.
+
+### Entry points
+- [index.html](index.html)
+- [src/main.tsx](src/main.tsx)
+- [src/App.tsx](src/App.tsx)
+
+### Components (one-line purpose each)
+- [src/components/TicketForm.tsx](src/components/TicketForm.tsx) (~646 lines) —
+  Form 1.0, ticket create/edit plus bulk "Acesso Full".
+- [src/components/TicketForm2.tsx](src/components/TicketForm2.tsx) (~786 lines) —
+  Jira Service Desk clone (Form 2.0). Roughly 80% duplicated from `TicketForm`.
+- [src/components/SheetDatabase.tsx](src/components/SheetDatabase.tsx) (~2.4k
+  lines) — monolith holding filters, CSV/TSV import/export, simulated SharePoint
+  Graph + Jira sync and mass actions. Highest refactor priority.
+- [src/components/Dashboard.tsx](src/components/Dashboard.tsx) — KPIs and
+  Recharts. Current KPI formulas are heuristic and not auditable.
+- [src/components/ToastNotification.tsx](src/components/ToastNotification.tsx) —
+  global toast stack powered by `motion`.
+
+### Domain types
+- [src/types.ts](src/types.ts) — `Ticket`, `TicketStatus`, `TicketPriority`,
+  `REQUIRE_SYSTEMS`, `ROLES`, `EQUIPES`, `EMAIL_DOMAINS`.
+
+### Dead dependencies (no usage under `src/`, slated for removal)
+- `firebase`, `express`, `dotenv`, `@google/genai`, `@types/express`.
+
+### Missing infrastructure (known gaps)
+- No automated tests, no ESLint or Prettier config, no `.github/` workflows, no
+  husky hooks.
+- `npm run lint` is currently only `tsc --noEmit`.
+- `npm run clean` references a nonexistent `server.js` and must be fixed or
+  removed.
+
+---
+
+## 3. Design direction (binding)
+
+### Anti-pattern reference
+The user's other project at
+`C:\Users\gperuzzf\OneDrive - NTT DATA EMEAL\Documentos\ABI\Sandbox VSCode\stuff\martech_framework_pdf`
+is heavily Apple-like / glassmorphic: translucent surfaces with
+`backdrop-filter: blur(22px) saturate(155%)`, radii up to 28px, drop shadows like
+`0 24px 70px rgba(15,23,42,0.18)`, multi-radial ambient gradients, animated orb
+loaders, hero headings `clamp(2.4rem, 5.4vw, 4.8rem)`, gradient pill buttons
+with hover lift. **This project must NOT adopt that look.**
+
+### Do NOT introduce
+- Glassmorphism or `backdrop-filter`.
+- Multi-radial ambient gradients on layout chrome.
+- Large drop shadows (`shadow-lg` and above) or colored shadows.
+- Oversized rounded corners (anything above 16px).
+- Animated decorative loaders, orb spinners, gradient buttons.
+- Hero typography or marketing-style hero sections.
+- Transform-based hover lifts.
+- Multi-color brand gradients.
+
+### Do adopt — flat minimalism (Linear / Notion / Stripe dashboards)
+- Information density over whitespace. Power users want data, not breathing room.
+- One primary task per screen; progressive disclosure for secondary info.
+- 5–7 primary KPIs maximum (3–5 for executive views).
+- Sidebar: 240–280px expanded, 64–72px collapsed.
+- Main area uses CSS Grid with `auto-fill, minmax(...)`.
+- Skeleton loaders, not spinners. Page interactive in under 2.5s.
+- Sticky filters across navigation within a session.
+- WCAG 2.2 AA baseline. Never rely on color alone — pair label, icon and color.
+- Direct labels beat legends. Bar charts always start at zero. No 3D, no
+  decorative fills.
+
+---
+
+## 4. Design tokens (source of truth)
+
+### Colors
+- Neutral scale: Tailwind `slate-50` … `slate-950`.
+- Single semantic accent: pick ONE of `slate-900` (monochrome) or `blue-600`
+  (`#2563eb`) for primary actions and links. Default to `slate-900` to match
+  Linear/Notion neutrality.
+- Status colors (use sparingly, always paired with icon and label):
+  - success `emerald-600`
+  - warning `amber-600`
+  - danger  `rose-600`
+  - info    `sky-600`
+- Remove the existing amber/gold ABI brand accents from layouts; keep the ABI
+  logo monochrome.
+
+### Typography
+- Base: `Inter`, then `ui-sans-serif` fallback. Drop the `Space Grotesk`
+  decorative pairing currently set in [src/index.css](src/index.css).
+- Mono: `JetBrains Mono` only for IDs, log areas and table numerics where
+  alignment matters.
+- Tight heading scale, no hero sizes:
+  - `h1` → `text-2xl` (24px)
+  - `h2` → `text-xl`
+  - `h3` → `text-base font-semibold`
+- Default letter-spacing. Do NOT apply tight `-0.045em` on headings.
+
+### Radii
+- Default `rounded-md` (6px). Maximum `rounded-lg` (8px) for cards and modals.
+- Forbidden: `rounded-2xl`, `rounded-3xl`, fully circular decorative elements.
+
+### Shadows
+- Only `shadow-xs` or `shadow-sm`. No `shadow-lg`+. No colored shadows.
+
+### Borders
+- 1px `slate-200` for separation. Lean on borders plus spacing rather than
+  shadow stacking.
+
+### Spacing
+- 4px base scale (Tailwind default).
+- Component padding: `p-3` to `p-4`. Avoid `p-8`+ on inner content.
+
+### Motion
+- Limit transitions to 120–180ms `ease-out` on `color`, `border-color`, `opacity`.
+- No transform-based hover lifts.
+- Always honor `prefers-reduced-motion`.
+
+### Backgrounds
+- Solid `bg-white` for surfaces, `bg-slate-50` for page background.
+- No gradients on layout chrome.
+
+---
+
+## 5. Chart presets — Tufte / Darkhorse "Data Looks Better Naked"
+
+Reference: <https://darkhorsevisualization.com/blog/data-looks-better-naked>
+
+Centralize these presets in `src/lib/chart-presets.ts` (or a sibling module) the
+first time a chart-touching PR lands. Until then, every new Recharts usage MUST
+mirror the exact props below.
+
+```tsx
+<CartesianGrid vertical={false} stroke="rgb(226 232 240)" strokeDasharray="3 3" />
+
+<XAxis
+  dataKey="..."
+  axisLine={false}
+  tickLine={false}
+  tick={{ fontSize: 12, fill: "rgb(100 116 139)" }}
+/>
+<YAxis
+  axisLine={false}
+  tickLine={false}
+  tick={{ fontSize: 12, fill: "rgb(100 116 139)" }}
+  width={40}
+/>
+
+<Bar dataKey="..." fill="rgb(15 23 42)" radius={[2, 2, 0, 0]} />
+
+<Line
+  type="monotone"
+  dataKey="..."
+  stroke="rgb(15 23 42)"
+  strokeWidth={2}
+  dot={false}
+  activeDot={{ r: 3 }}
+/>
+
+// Pie / Donut: avoid unless strictly required.
+// When unavoidable: direct labels and at most 4 slices.
+```
+
+Additional chart rules:
+- Always wrap in `<ResponsiveContainer>`. Container `min-h-[200px]`.
+- Prefer direct labels on series. Only use `<Legend />` when there are 3+ series
+  AND direct labeling is impractical; then `iconType="circle"`, `iconSize={8}`.
+- Bar charts always start at zero. Never use truncated y-axes for emphasis.
+- No 3D, no shadows, no decorative gradient fills. No background panels behind
+  the chart — let it breathe inside its card.
+- Tooltip: minimal custom component, `bg-white`, `border-slate-200`, no shadow
+  stacking.
+- Number formatting: `Intl.NumberFormat('pt-BR')` for counts. ISO or short month
+  format for dates.
+
+---
+
+## 6. Anti-patterns to flag in reviews
+
+Reject or rewrite any PR that does the following:
+
+- Reintroduces `firebase`, `express`, `dotenv` or `@google/genai`.
+- Adds `backdrop-filter`, `bg-gradient-*` on chrome, `shadow-lg`+ or
+  `rounded-2xl`+.
+- Adds decorative animations or hero typography.
+- Adds Recharts charts with vertical `CartesianGrid`, visible axis lines,
+  visible tick lines, oversized legends, or pie charts with 5+ slices.
+- Persists credentials or tokens in `localStorage` (the current
+  `SheetDatabase.tsx` does this — it must be replaced before any production
+  use).
+- Grows `SheetDatabase.tsx` further. New planilha logic must be split into
+  smaller modules under `src/components/sheet/` (or similar) following SRP.
+- Duplicates logic across `TicketForm` and `TicketForm2`. Extract shared logic
+  into hooks and presentational components.
+
+---
+
+## 7. Working contract for every change
+
+Before opening a PR you must have:
+
+1. Implemented the requested behavior.
+2. Added or updated targeted tests (when the test harness exists; otherwise
+   document the manual validation steps in `## Validation`).
+3. Confirmed `npm run lint` (currently `tsc --noEmit`) is clean for touched
+   files.
+4. Included a migration plan if a persisted shape changed (the `localStorage`
+   key `ab_inbev_tickets_db_v8` must be versioned when its schema evolves).
+5. Produced the four-block deliverable defined in section 1.
